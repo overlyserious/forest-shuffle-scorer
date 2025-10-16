@@ -1,0 +1,41 @@
+# macOS
+.DS_Store
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun.lock
+
+# Next.js
+.next/
+out/
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+.env.*
+
+# VS Code
+.vscode/
+
+# Build output
+dist/
+build/
+
+# Misc
+coverage/
+*.local
+
+# Netlify
+.netlify/
+
+# Dependency directories
+bower_components/
+
+# System Files
+Thumbs.db
