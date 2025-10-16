@@ -105,7 +105,7 @@ export function GameStateDisplay({
               {state.clearing.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {state.clearing.slice(0, 5).map((cardId, i) => (
-                    <Badge key={`${cardId}-${i}`} variant="secondary" className="text-xs">
+                    <Badge key={`clearing-${cardId}-pos${i}`} variant="secondary" className="text-xs">
                       {formatCardName(cardId)}
                     </Badge>
                   ))}
@@ -153,7 +153,7 @@ export function GameStateDisplay({
                 {playerState.hand.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {playerState.hand.map((cardId, i) => (
-                      <Badge key={`${cardId}-${i}`} className="text-xs">
+                      <Badge key={`hand-${playerId}-${cardId}-pos${i}`} className="text-xs">
                         {formatCardName(cardId)}
                       </Badge>
                     ))}

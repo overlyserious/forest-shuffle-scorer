@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { StateResponse, CodeExecution } from "@/types/api";
 
 export default function Home() {
-  const [apiUrl, setApiUrl] = useState("http://localhost:3000");
+  const [apiUrl, setApiUrl] = useState("http://localhost:8080");
   const [api, setApi] = useState<ForestShuffleAPI | null>(null);
   const [gameId, setGameId] = useState<string | null>(null);
   const [gameState, setGameState] = useState<StateResponse | null>(null);
@@ -81,7 +81,7 @@ export default function Home() {
                 id="apiUrl"
                 value={apiUrl}
                 onChange={(e) => setApiUrl(e.target.value)}
-                placeholder="http://localhost:3000"
+                placeholder="http://localhost:8080"
                 className="mt-1"
               />
             </div>

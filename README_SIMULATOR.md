@@ -47,7 +47,7 @@ This is an educational tool designed to help developers understand the Forest Sh
 ## 📋 Prerequisites
 
 - Node.js 18+ or Bun
-- Access to a running Forest Shuffle Backend API (default: `http://localhost:3000`)
+- Access to a running Forest Shuffle Backend API (default: `http://localhost:8080`)
 
 ## 🛠️ Installation
 
@@ -68,12 +68,14 @@ npm run dev
 
 The simulator will be available at `http://localhost:3000`
 
+**Note:** The simulator runs on port 3000, while the default Forest Shuffle Backend API is expected to run on port 8080. Make sure your backend API is not running on the same port as the simulator.
+
 ## 📖 How to Use
 
 ### 1. Connect to the API
 
 When you first open the simulator:
-1. Enter the Forest Shuffle Backend API URL (default: `http://localhost:3000`)
+1. Enter the Forest Shuffle Backend API URL (default: `http://localhost:8080`)
 2. Click "Connect to API"
 
 ### 2. Create a Game
@@ -157,9 +159,11 @@ This prevents duplicate actions if you retry a request!
 ### Changing the API URL
 
 You can connect to any Forest Shuffle API instance:
-- Local development: `http://localhost:3000`
+- Local development: `http://localhost:8080`
 - Remote server: `https://your-api.example.com`
-- Different port: `http://localhost:8080`
+- Different port: `http://localhost:9000`
+
+**Important:** The simulator runs on port 3000, so make sure your API backend runs on a different port (default: 8080).
 
 ### Example Card IDs
 
