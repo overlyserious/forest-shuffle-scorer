@@ -102,17 +102,20 @@ export function CodeDisplay({
                   code={displayExecution.code}
                   language="javascript"
                 >
-                  {({ className, style, tokens, getLineProps, getTokenProps }) => (
-                    <pre className={`${className} p-4 text-xs`} style={style}>
-                      {tokens.map((line, i) => (
-                        <div key={`req-line-${displayExecution.timestamp.getTime()}-${i}`} {...getLineProps({ line })}>
-                          {line.map((token, tokenIndex) => (
-                            <span key={`req-token-${i}-${tokenIndex}`} {...getTokenProps({ token })} />
-                          ))}
-                        </div>
-                      ))}
-                    </pre>
-                  )}
+                  {({ className, style, tokens, getLineProps, getTokenProps }) => {
+                    const timestamp = displayExecution.timestamp.getTime();
+                    return (
+                      <pre className={`${className} p-4 text-xs`} style={style}>
+                        {tokens.map((line, i) => (
+                          <div key={`req-line-${timestamp}-${i}`} {...getLineProps({ line })}>
+                            {line.map((token, tokenIndex) => (
+                              <span key={`req-token-${i}-${tokenIndex}`} {...getTokenProps({ token })} />
+                            ))}
+                          </div>
+                        ))}
+                      </pre>
+                    );
+                  }}
                 </Highlight>
               </ScrollArea>
             </div>
@@ -139,17 +142,20 @@ export function CodeDisplay({
                       tokens,
                       getLineProps,
                       getTokenProps,
-                    }) => (
-                      <pre className={`${className} p-4 text-xs`} style={style}>
-                        {tokens.map((line, i) => (
-                          <div key={`res-line-${displayExecution.timestamp.getTime()}-${i}`} {...getLineProps({ line })}>
-                            {line.map((token, tokenIndex) => (
-                              <span key={`res-token-${i}-${tokenIndex}`} {...getTokenProps({ token })} />
-                            ))}
-                          </div>
-                        ))}
-                      </pre>
-                    )}
+                    }) => {
+                      const timestamp = displayExecution.timestamp.getTime();
+                      return (
+                        <pre className={`${className} p-4 text-xs`} style={style}>
+                          {tokens.map((line, i) => (
+                            <div key={`res-line-${timestamp}-${i}`} {...getLineProps({ line })}>
+                              {line.map((token, tokenIndex) => (
+                                <span key={`res-token-${i}-${tokenIndex}`} {...getTokenProps({ token })} />
+                              ))}
+                            </div>
+                          ))}
+                        </pre>
+                      );
+                    }}
                   </Highlight>
                 </ScrollArea>
               </div>
