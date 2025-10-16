@@ -105,9 +105,9 @@ export function CodeDisplay({
                   {({ className, style, tokens, getLineProps, getTokenProps }) => (
                     <pre className={`${className} p-4 text-xs`} style={style}>
                       {tokens.map((line, i) => (
-                        <div key={`line-${i}`} {...getLineProps({ line })}>
-                          {line.map((token, key) => (
-                            <span key={key} {...getTokenProps({ token })} />
+                        <div key={`req-line-${displayExecution.timestamp.getTime()}-${i}`} {...getLineProps({ line })}>
+                          {line.map((token, tokenIndex) => (
+                            <span key={`req-token-${i}-${tokenIndex}`} {...getTokenProps({ token })} />
                           ))}
                         </div>
                       ))}
@@ -142,9 +142,9 @@ export function CodeDisplay({
                     }) => (
                       <pre className={`${className} p-4 text-xs`} style={style}>
                         {tokens.map((line, i) => (
-                          <div key={`line-${i}`} {...getLineProps({ line })}>
-                            {line.map((token, key) => (
-                              <span key={key} {...getTokenProps({ token })} />
+                          <div key={`res-line-${displayExecution.timestamp.getTime()}-${i}`} {...getLineProps({ line })}>
+                            {line.map((token, tokenIndex) => (
+                              <span key={`res-token-${i}-${tokenIndex}`} {...getTokenProps({ token })} />
                             ))}
                           </div>
                         ))}
@@ -173,7 +173,7 @@ export function CodeDisplay({
               <div className="mt-6 p-4 bg-zinc-800 rounded-md text-left">
                 <p className="text-xs text-zinc-500 mb-2">Example code you'll see:</p>
                 <pre className="text-xs text-zinc-300 overflow-x-auto">
-{`fetch('http://localhost:3000/games', {
+{`fetch('http://localhost:8080/games', {
   method: 'POST',
   headers: { 
     'Content-Type': 'application/json' 
