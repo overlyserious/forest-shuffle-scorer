@@ -153,12 +153,15 @@ const handleAction = async (action: () => Promise<void>) => {
   };
 
   return (
+    
     <div className="h-full flex flex-col">
+        
       {error && (
         <div className="mb-4 p-3 bg-destructive/10 border border-destructive rounded-md">
           <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
+
 
       <Tabs defaultValue="setup" className="flex-1 flex flex-col">
         <TabsList className="grid w-full grid-cols-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ForestShuffleAPI } from "@/lib/api-client";
 import { GameControls } from "@/components/GameControls";
 import { GameStateDisplay } from "@/components/GameStateDisplay";
@@ -13,6 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { History, FileCode } from "lucide-react";
 import type { StateResponse, CodeExecution } from "@/types/api";
+import { TutorialStep } from "@/components/TutorialStep";
+import { ProgressTracker } from "@/components/ProgressTracker";
+import { TUTORIAL_STEPS, getStepNumber, getTotalSteps, getNextStep, getPreviousStep } from "@/lib/tutorial-flow";
+import { RotateCcw, GraduationCap, Settings } from "lucide-react";
 
 export default function Home() {
   const [apiUrl, setApiUrl] = useState("http://localhost:8080");
@@ -25,6 +29,26 @@ export default function Home() {
   );
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [codeModalOpen, setCodeModalOpen] = useState(false);
+  const [isTutorialMode, setIsTutorialMode] = useState(true);
+const [currentStepId, setCurrentStepId] = useState(TUTORIAL_STEPS[0].id);
+const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+const [tutorialGameId, setTutorialGameId] = useState<string | null>(null);
+const [tutorialCurrentPlayer, setTutorialCurrentPlayer] = useState<string | null>(null);
+
+
+// Update game ID when tutorial creates it
+useEffect(() => {
+  if (isTutorialMode && gameId && !tutorialGameId) {
+    setTutorialGameId(gameId);
+  }
+}, [gameId, isTutorialMode, tutorialGameId]);
+
+// Update current player from game state
+useEffect(() => {
+  if (gameState?.state?.current_player_id) {
+    setTutorialCurrentPlayer(gameState.state.current_player_id);
+  }
+}, [gameState]);
 
   const handleConnect = () => {
     const newApi = new ForestShuffleAPI(apiUrl);
@@ -74,6 +98,52 @@ export default function Home() {
     }
   };
 
+  const handleStepComplete = (stepId: string) => {
+  if (!completedSteps.includes(stepId)) {
+    setCompletedSteps([...completedSteps, stepId]);
+  }
+};
+
+const handleNextStep = () => {
+  const nextStep = getNextStep(currentStepId);
+  if (nextStep) {
+    setCurrentStepId(nextStep.id);
+  } else {
+    // Tutorial complete - exit tutorial mode
+    setIsTutorialMode(false);
+  }
+};
+
+const handlePreviousStep = () => {
+  const prevStep = getPreviousStep(currentStepId);
+  if (prevStep) {
+    setCurrentStepId(prevStep.id);
+  }
+};
+
+const handleStepClick = (stepNumber: number) => {
+  const step = TUTORIAL_STEPS[stepNumber - 1];
+  if (step) {
+    setCurrentStepId(step.id);
+  }
+};
+
+const handleResetTutorial = () => {
+  setCurrentStepId(TUTORIAL_STEPS[0].id);
+  setCompletedSteps([]);
+  setTutorialGameId(null);
+  setTutorialCurrentPlayer(null);
+  setGameId(null);
+  setGameState(null);
+  setCodeExecutions([]);
+};
+
+const handleToggleTutorialMode = () => {
+  if (!isTutorialMode) {
+    handleResetTutorial();
+  }
+  setIsTutorialMode(!isTutorialMode);
+};
   if (!api) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
@@ -105,56 +175,93 @@ export default function Home() {
     );
   }
 
+
   return (
     <div className="h-screen flex flex-col bg-zinc-50">
-      {/* Header */}
-      <header className="border-b bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-bold">
-                🌲 Forest Shuffle API Simulator
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                Educational split-screen API explorer
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">API:</span>
-              <code className="text-xs bg-muted px-2 py-1 rounded">
-                {apiUrl}
-              </code>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setHistoryModalOpen(true)}
-                disabled={codeExecutions.length === 0}
-              >
-                <History className="mr-2 h-4 w-4" />
-                Execution History
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCodeModalOpen(true)}
-                disabled={codeExecutions.length === 0}
-              >
-                <FileCode className="mr-2 h-4 w-4" />
-                Complete Code
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearCode}
-              >
-                Clear History
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Split Screen */}
+{/* Header */}
+<header className="border-b bg-white shadow-sm">
+  <div className="container mx-auto px-4 py-3">
+    <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-lg font-bold">
+          🌲 Forest Shuffle API Simulator
+        </h1>
+        <p className="text-xs text-muted-foreground">
+          {isTutorialMode ? 'Guided Tutorial Mode' : 'Free Exploration Mode'}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant={isTutorialMode ? "default" : "outline"}
+          size="sm"
+          onClick={handleToggleTutorialMode}
+        >
+          {isTutorialMode ? (
+            <>
+              <GraduationCap className="w-4 h-4 mr-1" />
+              Tutorial
+            </>
+          ) : (
+            <>
+              <Settings className="w-4 h-4 mr-1" />
+              Free Mode
+            </>
+          )}
+        </Button>
+        {isTutorialMode && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetTutorial}
+          >
+            <RotateCcw className="w-4 h-4 mr-1" />
+            Start Over
+          </Button>
+        )}
+        <span className="text-xs text-muted-foreground">API:</span>
+        <code className="text-xs bg-muted px-2 py-1 rounded">
+          {apiUrl}
+        </code>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleClearCode}
+        >
+          Clear History
+        </Button>
+      </div>
+    </div>
+  </div>
+</header>
+{/* Content Area */}
+{isTutorialMode ? (
+  // Tutorial Mode
+  <div className="flex-1 flex flex-col overflow-hidden">
+    <ProgressTracker
+      currentStep={getStepNumber(currentStepId)}
+      totalSteps={getTotalSteps()}
+      completedSteps={completedSteps}
+      onStepClick={handleStepClick}
+    />
+    <div className="flex-1 overflow-auto">
+      <TutorialStep
+        step={TUTORIAL_STEPS.find(s => s.id === currentStepId)!}
+        api={api!}
+        gameId={tutorialGameId}
+        currentPlayer={tutorialCurrentPlayer}
+        onComplete={handleStepComplete}
+        onNext={handleNextStep}
+        onPrevious={handlePreviousStep}
+        canGoNext={completedSteps.includes(currentStepId) || getStepNumber(currentStepId) === 1}
+        canGoPrevious={getStepNumber(currentStepId) > 1}
+        isLastStep={getStepNumber(currentStepId) === getTotalSteps()}
+      />
+    </div>
+  </div>
+) : (
+  // Free Exploration Mode (existing split screen)
+  <div className="flex-1 flex overflow-hidden">
+{/* Split Screen */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - User Interaction */}
         <div className="w-1/2 border-r flex flex-col bg-white">
@@ -197,6 +304,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+  </div>
+)}
+      
 
       {/* Modals */}
       <ExecutionHistoryModal
