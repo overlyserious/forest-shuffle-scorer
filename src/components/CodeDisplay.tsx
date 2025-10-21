@@ -1,119 +1,47 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
 import { Highlight, themes } from "prism-react-renderer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import type { CodeExecution } from "@/types/api";
 
 interface CodeDisplayProps {
-  executions: CodeExecution[];
   currentExecution: CodeExecution | null;
 }
 
-export function CodeDisplay({
-  executions,
-  currentExecution,
-}: CodeDisplayProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (currentExecution) {
-      const index = executions.findIndex(
-        (e) => e.timestamp === currentExecution.timestamp,
-      );
-      setSelectedIndex(index);
-      
-      // Auto-scroll to bottom when new execution is added
-      if (scrollAreaRef.current) {
-        const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-        if (scrollContainer) {
-          scrollContainer.scrollTop = scrollContainer.scrollHeight;
-        }
-      }
-    }
-  }, [currentExecution, executions]);
-
-  const displayExecution =
-    selectedIndex !== null ? executions[selectedIndex] : currentExecution;
-
+export function CodeDisplay({ currentExecution }: CodeDisplayProps) {
   return (
     <div className="h-full flex flex-col gap-4">
-      {/* Execution History */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Execution History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-32" ref={scrollAreaRef}>
-            <div className="space-y-2">
-              {executions.length === 0 ? (
-                <div className="text-sm text-muted-foreground space-y-2">
-                  <p className="font-medium">No API calls yet</p>
-                  <p className="text-xs">
-                    Start by creating a game in the Setup tab. You'll see the
-                    exact JavaScript code here!
-                  </p>
-                </div>
-              ) : (
-                executions.map((execution, index) => (
-                  <button
-                    type="button"
-                    key={`${execution.timestamp.getTime()}-${index}`}
-                    onClick={() => setSelectedIndex(index)}
-                    className={`w-full text-left p-2 rounded-md text-xs transition-colors ${
-                      selectedIndex === index
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{execution.action}</span>
-                      <span className="text-xs opacity-70">
-                        {execution.timestamp.toLocaleTimeString()}
-                      </span>
-                    </div>
-                    {execution.error && (
-                      <Badge variant="destructive" className="mt-1 text-xs">
-                        Error
-                      </Badge>
-                    )}
-                  </button>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-
-
-      {/* Code Display */}
-      {displayExecution ? (
-        <Card className="flex-1 flex flex-col min-h-0">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">{displayExecution.action}</CardTitle>
-              {displayExecution.error && (
-                <Badge variant="destructive">Error</Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col min-h-0 gap-4">
-            {/* Request Code */}
-            <div className="flex-1 min-h-0 flex flex-col">
-              <h4 className="text-xs font-semibold mb-2 text-muted-foreground">
-                Request Code
-              </h4>
+      {currentExecution ? (
+        <>
+          {/* Request Code */}
+          <Card className="flex-1 flex flex-col min-h-0">
+            <CardHeader>
+              <CardTitle className="text-sm">Request Code</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 min-h-0 flex flex-col">
+              <div className="mb-2">
+                <h4 className="text-xs font-semibold text-zinc-400">
+                  {currentExecution.action}
+                </h4>
+                <p className="text-xs text-zinc-500">
+                  {currentExecution.timestamp.toLocaleString()}
+                </p>
+              </div>
               <ScrollArea className="flex-1 rounded-md border bg-zinc-950">
                 <Highlight
                   theme={themes.nightOwl}
-                  code={displayExecution.code}
+                  code={currentExecution.code}
                   language="javascript"
                 >
-                  {({ className, style, tokens, getLineProps, getTokenProps }) => {
-                    const timestamp = displayExecution.timestamp.getTime();
+                  {({
+                    className,
+                    style,
+                    tokens,
+                    getLineProps,
+                    getTokenProps,
+                  }) => {
+                    const timestamp = currentExecution.timestamp.getTime();
                     return (
                       <pre className={`${className} p-4 text-xs`} style={style}>
                         {tokens.map((line, i) => (
@@ -128,50 +56,52 @@ export function CodeDisplay({
                   }}
                 </Highlight>
               </ScrollArea>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Response/Error */}
-            {(displayExecution.response || displayExecution.error) && (
-              <div className="flex-1 min-h-0 flex flex-col">
-                <h4 className="text-xs font-semibold mb-2 text-muted-foreground">
-                  {displayExecution.error ? "Error" : "Response"}
-                </h4>
-                <ScrollArea className="flex-1 rounded-md border bg-zinc-950">
-                  <Highlight
-                    theme={themes.nightOwl}
-                    code={
-                      displayExecution.error
-                        ? displayExecution.error
-                        : JSON.stringify(displayExecution.response, null, 2)
-                    }
-                    language={displayExecution.error ? "text" : "json"}
-                  >
-                    {({
-                      className,
-                      style,
-                      tokens,
-                      getLineProps,
-                      getTokenProps,
-                    }) => {
-                      const timestamp = displayExecution.timestamp.getTime();
-                      return (
-                        <pre className={`${className} p-4 text-xs`} style={style}>
-                          {tokens.map((line, i) => (
-                            <div key={`res-line-${timestamp}-${i}`} {...getLineProps({ line })}>
-                              {line.map((token, tokenIndex) => (
-                                <span key={`res-token-${i}-${tokenIndex}`} {...getTokenProps({ token })} />
-                              ))}
-                            </div>
-                          ))}
-                        </pre>
-                      );
-                    }}
-                  </Highlight>
-                </ScrollArea>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          {/* Response/Error */}
+          <Card className="flex-1 flex flex-col min-h-0">
+            <CardHeader>
+              <CardTitle className="text-sm">
+                {currentExecution.error ? "Error" : "Response"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 min-h-0 flex flex-col">
+              <ScrollArea className="flex-1 rounded-md border bg-zinc-950">
+                <Highlight
+                  theme={themes.nightOwl}
+                  code={
+                    currentExecution.error
+                      ? currentExecution.error
+                      : JSON.stringify(currentExecution.response, null, 2)
+                  }
+                  language={currentExecution.error ? "text" : "json"}
+                >
+                  {({
+                    className,
+                    style,
+                    tokens,
+                    getLineProps,
+                    getTokenProps,
+                  }) => {
+                    const timestamp = currentExecution.timestamp.getTime();
+                    return (
+                      <pre className={`${className} p-4 text-xs`} style={style}>
+                        {tokens.map((line, i) => (
+                          <div key={`res-line-${timestamp}-${i}`} {...getLineProps({ line })}>
+                            {line.map((token, tokenIndex) => (
+                              <span key={`res-token-${i}-${tokenIndex}`} {...getTokenProps({ token })} />
+                            ))}
+                          </div>
+                        ))}
+                      </pre>
+                    );
+                  }}
+                </Highlight>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </>
       ) : (
         <Card className="flex-1 flex flex-col min-h-0">
           <CardHeader>

@@ -273,12 +273,13 @@ const handleAction = async (action: () => Promise<void>) => {
                         className="text-sm"
                       />
                     </div>
-                    <Button
-                      onClick={() => handleAction(addPlayer)}
-                      disabled={loading}
-                      className="w-full"
-                      size="sm"
-                    >
+<Button
+  onClick={() => handleAction(addPlayer)}
+  disabled={loading || gameState?.state?.phase === "PLAYING"}
+  className="w-full"
+  size="sm"
+  title={gameState?.state?.phase === "PLAYING" ? "Cannot add players after game has started" : ""}
+>
                       {loading ? "Adding..." : "Add Player"}
                     </Button>
                   </CardContent>
@@ -289,12 +290,13 @@ const handleAction = async (action: () => Promise<void>) => {
                     <CardTitle className="text-sm">Start Game</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Button
-                      onClick={() => handleAction(startGame)}
-                      disabled={loading}
-                      className="w-full"
-                      size="sm"
-                    >
+<Button
+  onClick={() => handleAction(startGame)}
+  disabled={loading || gameState?.state?.phase === "PLAYING"}
+  className="w-full"
+  size="sm"
+  title={gameState?.state?.phase === "PLAYING" ? "Game already started" : ""}
+>
                       {loading ? "Starting..." : "Start Game"}
                     </Button>
                   </CardContent>

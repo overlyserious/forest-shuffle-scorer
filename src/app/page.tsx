@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ForestShuffleAPI } from "@/lib/api-client";
 import { GameControls } from "@/components/GameControls";
 import { GameStateDisplay } from "@/components/GameStateDisplay";
 import { CodeDisplay } from "@/components/CodeDisplay";
+import { ExecutionHistoryModal } from "@/components/ExecutionHistoryModal";
+import { CompleteCodeModal } from "@/components/CompleteCodeModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { History, FileCode } from "lucide-react";
 import type { StateResponse, CodeExecution } from "@/types/api";
 
 export default function Home() {
@@ -20,6 +23,8 @@ export default function Home() {
   const [currentExecution, setCurrentExecution] = useState<CodeExecution | null>(
     null,
   );
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [codeModalOpen, setCodeModalOpen] = useState(false);
 
   const handleConnect = () => {
     const newApi = new ForestShuffleAPI(apiUrl);
@@ -36,30 +41,30 @@ export default function Home() {
     setGameId(newGameId);
   };
 
-const handleStateUpdate = async (retries = 3): Promise<void> => {
-  if (!api || !gameId) return;
-  
-  try {
-    const state = await api.getGameStateSilent(gameId);
+  const handleStateUpdate = async (retries = 3): Promise<void> => {
+    if (!api || !gameId) return;
     
-    // Check if projection is lagging
-    if (state.projection_lagging && retries > 0) {
-      // Wait 500ms and retry
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return handleStateUpdate(retries - 1);
+    try {
+      const state = await api.getGameStateSilent(gameId);
+      
+      // Check if projection is lagging
+      if (state.projection_lagging && retries > 0) {
+        // Wait 500ms and retry
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return handleStateUpdate(retries - 1);
+      }
+      
+      setGameState(state);
+    } catch (error) {
+      console.error("Failed to update state:", error);
+      
+      // Retry on error too
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return handleStateUpdate(retries - 1);
+      }
     }
-    
-    setGameState(state);
-  } catch (error) {
-    console.error("Failed to update state:", error);
-    
-    // Retry on error too
-    if (retries > 0) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return handleStateUpdate(retries - 1);
-    }
-  }
-};
+  };
 
   const handleClearCode = () => {
     if (api) {
@@ -67,14 +72,6 @@ const handleStateUpdate = async (retries = 3): Promise<void> => {
       setCodeExecutions([]);
       setCurrentExecution(null);
     }
-  };
-
-  const handleDisconnect = () => {
-    setApi(null);
-    setGameId(null);
-    setGameState(null);
-    setCodeExecutions([]);
-    setCurrentExecution(null);
   };
 
   if (!api) {
@@ -130,16 +127,27 @@ const handleStateUpdate = async (retries = 3): Promise<void> => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleClearCode}
+                onClick={() => setHistoryModalOpen(true)}
+                disabled={codeExecutions.length === 0}
               >
-                Clear History
+                <History className="mr-2 h-4 w-4" />
+                Execution History
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleDisconnect}
+                onClick={() => setCodeModalOpen(true)}
+                disabled={codeExecutions.length === 0}
               >
-                Disconnect
+                <FileCode className="mr-2 h-4 w-4" />
+                Complete Code
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearCode}
+              >
+                Clear History
               </Button>
             </div>
           </div>
@@ -184,12 +192,25 @@ const handleStateUpdate = async (retries = 3): Promise<void> => {
           </div>
           <div className="flex-1 overflow-hidden p-4">
             <CodeDisplay
-              executions={codeExecutions}
               currentExecution={currentExecution}
             />
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <ExecutionHistoryModal
+        open={historyModalOpen}
+        onOpenChange={setHistoryModalOpen}
+        executions={codeExecutions}
+      />
+
+      <CompleteCodeModal
+        open={codeModalOpen}
+        onOpenChange={setCodeModalOpen}
+        executions={codeExecutions}
+        apiUrl={apiUrl}
+      />
 
       {/* Footer */}
       <footer className="border-t bg-white px-4 py-2">
