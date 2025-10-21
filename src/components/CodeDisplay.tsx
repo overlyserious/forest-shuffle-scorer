@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Highlight, themes } from "prism-react-renderer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,6 +17,7 @@ export function CodeDisplay({
   currentExecution,
 }: CodeDisplayProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (currentExecution) {
@@ -24,6 +25,14 @@ export function CodeDisplay({
         (e) => e.timestamp === currentExecution.timestamp,
       );
       setSelectedIndex(index);
+      
+      // Auto-scroll to bottom when new execution is added
+      if (scrollAreaRef.current) {
+        const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+      }
     }
   }, [currentExecution, executions]);
 
@@ -38,7 +47,7 @@ export function CodeDisplay({
           <CardTitle className="text-sm">Execution History</CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-32">
+          <ScrollArea className="h-32" ref={scrollAreaRef}>
             <div className="space-y-2">
               {executions.length === 0 ? (
                 <div className="text-sm text-muted-foreground space-y-2">
@@ -78,6 +87,7 @@ export function CodeDisplay({
           </ScrollArea>
         </CardContent>
       </Card>
+
 
       {/* Code Display */}
       {displayExecution ? (

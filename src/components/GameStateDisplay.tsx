@@ -43,7 +43,7 @@ export function GameStateDisplay({
     );
   }
 
-  const state = gameState.state.state;
+  const state = gameState.state;
 
   return (
     <ScrollArea className="h-full">
@@ -57,10 +57,6 @@ export function GameStateDisplay({
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Game ID:</span>
               <span className="font-mono text-xs">{gameId.slice(0, 8)}...</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Status:</span>
-              <Badge>{gameState.state.status}</Badge>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Phase:</span>
@@ -92,7 +88,7 @@ export function GameStateDisplay({
                 <span className="text-xs font-medium text-muted-foreground">
                   Deck
                 </span>
-                <Badge variant="outline">{state.deck.length} cards</Badge>
+                <Badge variant="outline">{state.deck?.length ?? 0} cards</Badge>
               </div>
             </div>
             <div>
@@ -100,9 +96,9 @@ export function GameStateDisplay({
                 <span className="text-xs font-medium text-muted-foreground">
                   Clearing
                 </span>
-                <Badge variant="outline">{state.clearing.length} cards</Badge>
+                <Badge variant="outline">{state.clearing?.length ?? 0} cards</Badge>
               </div>
-              {state.clearing.length > 0 && (
+              {state.clearing && state.clearing.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {state.clearing.slice(0, 5).map((cardId, i) => (
                     <Badge key={`clearing-${cardId}-pos${i}`} variant="secondary" className="text-xs">
@@ -120,8 +116,9 @@ export function GameStateDisplay({
           </CardContent>
         </Card>
 
+
         {/* Players */}
-        {Object.entries(state.players).map(([playerId, playerState]) => (
+        {state.players && Object.entries(state.players).map(([playerId, playerState]) => (
           <Card
             key={playerId}
             className={
@@ -148,9 +145,9 @@ export function GameStateDisplay({
                   <span className="text-xs font-medium text-muted-foreground">
                     Hand
                   </span>
-                  <Badge variant="outline">{playerState.hand.length} cards</Badge>
+                  <Badge variant="outline">{playerState.hand?.length ?? 0} cards</Badge>
                 </div>
-                {playerState.hand.length > 0 && (
+                {playerState.hand && playerState.hand.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {playerState.hand.map((cardId, i) => (
                       <Badge key={`hand-${playerId}-${cardId}-pos${i}`} className="text-xs">
@@ -167,9 +164,9 @@ export function GameStateDisplay({
                   <span className="text-xs font-medium text-muted-foreground">
                     Trees
                   </span>
-                  <Badge variant="outline">{playerState.trees.length} trees</Badge>
+                  <Badge variant="outline">{playerState.trees?.length ?? 0} trees</Badge>
                 </div>
-                {playerState.trees.length > 0 && (
+                {playerState.trees && playerState.trees.length > 0 && (
                   <div className="space-y-2">
                     {playerState.trees.map((tree, treeIndex) => (
                       <div
@@ -182,28 +179,28 @@ export function GameStateDisplay({
                         {/* Dwellers Grid */}
                         <div className="grid grid-cols-3 gap-1 mt-2">
                           <div className="col-start-2 text-center">
-                            {tree.dwellers.TOP && (
+                            {tree.dwellers?.TOP && (
                               <Badge variant="secondary" className="text-[10px] px-1 py-0">
                                 ⬆ {formatCardName(tree.dwellers.TOP)}
                               </Badge>
                             )}
                           </div>
                           <div className="col-start-1 text-center">
-                            {tree.dwellers.LEFT && (
+                            {tree.dwellers?.LEFT && (
                               <Badge variant="secondary" className="text-[10px] px-1 py-0">
                                 ⬅ {formatCardName(tree.dwellers.LEFT)}
                               </Badge>
                             )}
                           </div>
                           <div className="col-start-3 text-center">
-                            {tree.dwellers.RIGHT && (
+                            {tree.dwellers?.RIGHT && (
                               <Badge variant="secondary" className="text-[10px] px-1 py-0">
                                 ➡ {formatCardName(tree.dwellers.RIGHT)}
                               </Badge>
                             )}
                           </div>
                           <div className="col-start-2 text-center">
-                            {tree.dwellers.BOTTOM && (
+                            {tree.dwellers?.BOTTOM && (
                               <Badge variant="secondary" className="text-[10px] px-1 py-0">
                                 ⬇ {formatCardName(tree.dwellers.BOTTOM)}
                               </Badge>

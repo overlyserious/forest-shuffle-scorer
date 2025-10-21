@@ -49,20 +49,22 @@ export function GameControls({
   >("TOP");
   const [dwellerPaymentCards, setDwellerPaymentCards] = useState("");
 
-  const currentPlayer = gameState?.state.state.current_player_id || "";
+  const currentPlayer = gameState?.state.current_player_id || "";
 
-  const handleAction = async (action: () => Promise<void>) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await action();
-      onStateUpdate();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  };
+const handleAction = async (action: () => Promise<void>) => {
+  setLoading(true);
+  setError(null);
+  try {
+    await action();
+    
+    // Trigger state update (will retry if projection is lagging)
+    onStateUpdate();
+  } catch (err) {
+    setError(err instanceof Error ? err.message : String(err));
+  } finally {
+    setLoading(false);
+  }
+};
 
   const createGame = async () => {
     const result = await api.createGame({
@@ -76,7 +78,7 @@ export function GameControls({
   const addPlayer = async () => {
     if (!gameId) return;
     await api.addPlayer(gameId, {
-      player_client_id: playerIdToAdd,
+      player_id: playerIdToAdd,
       client_id: `join-${playerIdToAdd}-${Date.now()}`,
       display_name: playerDisplayName,
     });

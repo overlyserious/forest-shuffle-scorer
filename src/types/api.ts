@@ -59,15 +59,12 @@ export interface GameState {
 }
 
 export interface StateResponse {
-  state: {
-    game_id: string;
-    status: string;
-    state: GameState;
-    last_sequence: string;
-    last_projected_sequence: string;
-    updated_at: string;
-  };
+  game_id: string;
+  state: GameState;
+  last_sequence: string;
+  last_projected_sequence: string;
   projection_lagging: boolean;
+  updated_at: string;
 }
 
 export interface CreateGameRequest {
@@ -77,7 +74,7 @@ export interface CreateGameRequest {
 }
 
 export interface AddPlayerRequest {
-  player_client_id: string;
+  player_id: string;
   client_id: string;
   display_name?: string;
 }

@@ -36,16 +36,30 @@ export default function Home() {
     setGameId(newGameId);
   };
 
-  const handleStateUpdate = async () => {
-    if (api && gameId) {
-      try {
-        const state = await api.getGameState(gameId);
-        setGameState(state);
-      } catch (error) {
-        console.error("Failed to update state:", error);
-      }
+const handleStateUpdate = async (retries = 3): Promise<void> => {
+  if (!api || !gameId) return;
+  
+  try {
+    const state = await api.getGameStateSilent(gameId);
+    
+    // Check if projection is lagging
+    if (state.projection_lagging && retries > 0) {
+      // Wait 500ms and retry
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return handleStateUpdate(retries - 1);
     }
-  };
+    
+    setGameState(state);
+  } catch (error) {
+    console.error("Failed to update state:", error);
+    
+    // Retry on error too
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return handleStateUpdate(retries - 1);
+    }
+  }
+};
 
   const handleClearCode = () => {
     if (api) {

@@ -397,6 +397,26 @@ export class ForestShuffleAPI {
     }
   }
 
+
+async getGameStateSilent(gameId: string): Promise<StateResponse> {
+  const endpoint = `/games/${gameId}/state`;
+  
+  try {
+    const response = await fetch(`${this.baseUrl}${endpoint}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to get game state");
+    }
+
+    // Note: No logCodeExecution call - this is silent
+    return data;
+  } catch (error) {
+    // Still throw the error, just don't log it
+    throw error;
+  }
+}
+
   async getEvents(
     gameId: string,
     from = 0,
