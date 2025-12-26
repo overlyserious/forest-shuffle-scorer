@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
-import { Marker, CalibrationData } from '@/types/image-scorer';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { Marker, CalibrationData, DetectedCard, DetectedCorner, DetectionMethod } from '@/types/image-scorer';
 import { calculateDistance } from '@/lib/spatial-inference';
+import { Button } from '@/components/ui/button';
+import { Scan, Loader2, CornerDownRight, Sparkles } from 'lucide-react';
 
 type ImageAnnotatorProps = {
   imageUrl: string;
@@ -12,6 +14,16 @@ type ImageAnnotatorProps = {
   calibrationData: CalibrationData | null;
   onCalibrationComplete: (data: CalibrationData) => void;
   selectedMarkerId?: string;
+  // Detection props
+  detectedCards?: DetectedCard[];
+  detectedCorners?: DetectedCorner[];
+  showBoundingBoxes?: boolean;
+  showCorners?: boolean;
+  detectionMethod?: DetectionMethod;
+  onDetectionMethodChange?: (method: DetectionMethod) => void;
+  onDetect?: () => void;
+  isDetecting?: boolean;
+  detectionError?: string | null;
 };
 
 export function ImageAnnotator({
@@ -22,6 +34,15 @@ export function ImageAnnotator({
   calibrationData,
   onCalibrationComplete,
   selectedMarkerId,
+  detectedCards = [],
+  detectedCorners = [],
+  showBoundingBoxes = true,
+  showCorners = true,
+  detectionMethod = "contour",
+  onDetectionMethodChange,
+  onDetect,
+  isDetecting = false,
+  detectionError,
 }: ImageAnnotatorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -80,19 +101,36 @@ export function ImageAnnotator({
 
     // Draw markers
     if (mode === 'place-markers') {
+      // Draw detected corners first (bottom layer)
+      if (showCorners && detectedCorners.length > 0) {
+        detectedCorners.forEach(corner => {
+          drawCorner(ctx, corner);
+        });
+      }
+
+      // Draw detected card bounding boxes
+      if (showBoundingBoxes && detectedCards.length > 0) {
+        detectedCards.forEach(card => {
+          const isSelected = card.id === selectedMarkerId;
+          const color = isSelected ? '#ffcc00' : '#00cc66';
+          drawRotatedRect(ctx, card, color, isSelected);
+        });
+      }
+
+      // Draw manual markers on top
       markers.forEach(marker => {
         const isSelected = marker.id === selectedMarkerId;
         const color = isSelected ? 'yellow' : 'green';
         const size = isSelected ? 10 : 8;
         drawPoint(ctx, marker, color, size);
-        
+
         // Draw marker label
         ctx.fillStyle = color;
         ctx.font = '12px sans-serif';
         ctx.fillText(marker.id, marker.x + 10, marker.y - 10);
       });
     }
-  }, [image, mode, markers, calibrationPoint1, calibrationData, selectedMarkerId, canvasSize]);
+  }, [image, mode, markers, calibrationPoint1, calibrationData, selectedMarkerId, canvasSize, detectedCards, detectedCorners, showBoundingBoxes, showCorners]);
 
   function drawPoint(
     ctx: CanvasRenderingContext2D,
@@ -121,6 +159,99 @@ export function ImageAnnotator({
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.stroke();
+  }
+
+  function drawRotatedRect(
+    ctx: CanvasRenderingContext2D,
+    card: DetectedCard,
+    color: string,
+    isSelected: boolean
+  ) {
+    ctx.save();
+    ctx.translate(card.x, card.y);
+    ctx.rotate((card.angle * Math.PI) / 180);
+
+    // Draw rectangle
+    ctx.strokeStyle = color;
+    ctx.lineWidth = isSelected ? 3 : 2;
+    ctx.strokeRect(-card.width / 2, -card.height / 2, card.width, card.height);
+
+    // Fill with semi-transparent color
+    ctx.fillStyle = isSelected ? 'rgba(255, 255, 0, 0.2)' : 'rgba(0, 255, 0, 0.1)';
+    ctx.fillRect(-card.width / 2, -card.height / 2, card.width, card.height);
+
+    ctx.restore();
+
+    // Draw center point
+    drawPoint(ctx, card, color, isSelected ? 8 : 6);
+
+    // Draw confidence label
+    ctx.fillStyle = color;
+    ctx.font = '11px sans-serif';
+    ctx.fillText(`${Math.round(card.confidence * 100)}%`, card.x + 10, card.y - 10);
+  }
+
+  function drawCorner(
+    ctx: CanvasRenderingContext2D,
+    corner: DetectedCorner
+  ) {
+    const size = 8;
+    const { x, y, quadrant, strength } = corner;
+
+    // Color based on quadrant
+    const colors: Record<string, string> = {
+      TL: '#ff6b6b',
+      TR: '#4ecdc4',
+      BL: '#ffe66d',
+      BR: '#95e1d3',
+      unknown: '#999999',
+    };
+    const color = colors[quadrant] || colors.unknown;
+
+    // Draw corner marker
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Draw L-shape indicator based on quadrant
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    switch (quadrant) {
+      case 'TL':
+        ctx.moveTo(size, 0);
+        ctx.lineTo(0, 0);
+        ctx.lineTo(0, size);
+        break;
+      case 'TR':
+        ctx.moveTo(-size, 0);
+        ctx.lineTo(0, 0);
+        ctx.lineTo(0, size);
+        break;
+      case 'BL':
+        ctx.moveTo(size, 0);
+        ctx.lineTo(0, 0);
+        ctx.lineTo(0, -size);
+        break;
+      case 'BR':
+        ctx.moveTo(-size, 0);
+        ctx.lineTo(0, 0);
+        ctx.lineTo(0, -size);
+        break;
+      default:
+        // Draw circle for unknown
+        ctx.arc(0, 0, size / 2, 0, 2 * Math.PI);
+    }
+    ctx.stroke();
+
+    // Draw center dot with opacity based on strength
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.3 + strength * 0.7;
+    ctx.beginPath();
+    ctx.arc(0, 0, 3, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.restore();
   }
 
   function getCanvasCoordinates(e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number } {
@@ -195,6 +326,14 @@ export function ImageAnnotator({
     setDraggedMarkerId(null);
   }
 
+  // Expose image element for detection
+  const getImageElement = useCallback(() => {
+    return image;
+  }, [image]);
+
+  // Make getImageElement available to parent via ref-like pattern
+  // Parent can access via onDetect callback context
+
   if (!image) {
     return <div className="flex items-center justify-center h-96 text-muted-foreground">Loading image...</div>;
   }
@@ -215,7 +354,97 @@ export function ImageAnnotator({
           style={{ display: 'block', maxWidth: '100%' }}
         />
       </div>
-      
+
+      {/* Detection controls */}
+      {mode === 'place-markers' && onDetect && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            {/* Detection method toggle */}
+            {onDetectionMethodChange && (
+              <div className="flex items-center border rounded-md overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => onDetectionMethodChange("contour")}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    detectionMethod === "contour"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background hover:bg-muted"
+                  }`}
+                >
+                  Contour
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDetectionMethodChange("corner")}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    detectionMethod === "corner"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background hover:bg-muted"
+                  }`}
+                >
+                  Corner
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDetectionMethodChange("vision")}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    detectionMethod === "vision"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background hover:bg-muted"
+                  }`}
+                >
+                  Vision AI
+                </button>
+              </div>
+            )}
+
+            <Button
+              onClick={onDetect}
+              disabled={isDetecting}
+              variant="outline"
+              size="sm"
+            >
+              {isDetecting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {detectionMethod === "vision" ? "Analyzing..." : "Detecting..."}
+                </>
+              ) : detectionMethod === "vision" ? (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Analyze with AI
+                </>
+              ) : detectionMethod === "corner" ? (
+                <>
+                  <CornerDownRight className="h-4 w-4 mr-2" />
+                  Detect Corners
+                </>
+              ) : (
+                <>
+                  <Scan className="h-4 w-4 mr-2" />
+                  Detect Cards
+                </>
+              )}
+            </Button>
+
+            {detectedCards.length > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {detectedCards.length} cards
+              </span>
+            )}
+            {detectedCorners.length > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {detectedCorners.length} corners
+              </span>
+            )}
+          </div>
+
+          {detectionError && (
+            <span className="text-sm text-red-500">{detectionError}</span>
+          )}
+        </div>
+      )}
+
       <div className="text-sm text-muted-foreground">
         {mode === 'calibrate' && !calibrationData && (
           <p>
@@ -231,10 +460,17 @@ export function ImageAnnotator({
         )}
         {mode === 'place-markers' && (
           <p>
-            Click on card centers to place markers. Drag markers to adjust position. {markers.length} markers placed.
+            Click on card centers to place markers. Drag markers to adjust position.
+            {markers.length > 0 && ` ${markers.length} manual markers.`}
+            {detectedCards.length > 0 && ` ${detectedCards.length} detected cards.`}
           </p>
         )}
       </div>
     </div>
   );
+}
+
+// Export a way to get the canvas for detection
+export function useImageAnnotatorCanvas(canvasRef: React.RefObject<HTMLCanvasElement>) {
+  return canvasRef.current;
 }
